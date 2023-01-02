@@ -6,8 +6,33 @@ from fastapi import Depends
 
 
 
-# create user
+# get an user (returns a dict)
+def get_user(db: Session, username: str):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user:
+        #return schemas.UserInDB(**user.__dict__)
+        return user
+    else:
+        return False
+
+
+# create user (for signup); no agrega los grupos, lo que debe hacer un admin
 def create_user(user: schemas.UserRegister,
+                db: Session = Depends(get_db)):
+    hash_password = get_password_hash(user.password)
+    db_user = models.User(email=user.email,
+                          full_name=user.full_name,
+                          hashed_password=hash_password,
+                          username=user.username)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+# create user and its groups
+def create_user_groups(
+                user: schemas.UserRegister,
                 groups: list[int],
                 db: Session = Depends(get_db)):
     hash_password = get_password_hash(user.password)
@@ -38,14 +63,15 @@ def edit_user(user_id: int, groups:list[int],user: schemas.User,db: Session = De
         user_data = user.dict(exclude_unset=True)
         for key, value in user_data.items():
             setattr(db_user, key, value)
+    db.add(db_user)
     # lista de grupos
     db.query(models.UserGroups).filter_by(user_id=user_id).delete()
     # inserto
     for g in groups:
         db_userGroups = models.UserGroups(user_id=user_id,group_id=g)
         db.add(db_userGroups)
-    db.refresh(db_user)
     db.commit()
+    db.refresh(db_user)
     return {'Msg':"Operation succeed"} 
 
 

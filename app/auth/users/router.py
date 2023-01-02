@@ -23,6 +23,13 @@ def read_groups(
         return db_operations.get_users(skip,limit,db)
 
 
+
+# Create an user and its groups
+@router.post("/")
+def create_user(user:schemas.UserRegister,groups:list[int],db: Session = Depends(get_db)):
+    return db_operations.create_user_groups(user,groups,db)
+
+
 # Edit an user
 @router.put("/{user_id}")
 def edit_user(user_id:int,groups:list[int],user:schemas.User,db: Session = Depends(get_db)):

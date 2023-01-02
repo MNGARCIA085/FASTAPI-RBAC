@@ -1,12 +1,12 @@
 from datetime import timedelta
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
-from . import schemas,utils,db_operations
+from . import schemas,utils
 from sqlalchemy.orm import Session
 from databases.config import get_db
 from constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from .groups import router as groups_routes
-from .users import router as users_routes
+from .users import db_operations, router as users_routes
 
 
 router = APIRouter(
@@ -22,7 +22,6 @@ router.include_router(users_routes.router,tags=['users'])
 # sign up o register
 @router.post("/signup", response_model=schemas.Token, summary="Sign up (register)",tags=['auth'])
 async def signin(user:schemas.UserRegister,
-                groups:list[int],
                 db:Session = Depends(get_db)):
     # chequeo que no se haya registrado ya
     aux = db_operations.get_user(db,user.username) # devuelve False si no está
@@ -32,7 +31,7 @@ async def signin(user:schemas.UserRegister,
     if user.password != user.password_two:
         raise HTTPException(status_code=400,detail='Passwords did not match')
     # sino procedo a crear el usuario
-    user = db_operations.create_user(user,groups,db)
+    user = db_operations.create_user(user,db)
     # creo el token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(
