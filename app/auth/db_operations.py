@@ -3,8 +3,7 @@ from databases.config import get_db
 from . import schemas,models
 from sqlalchemy.orm import Session
 from fastapi import Depends
-
-
+from .users.db_operations import get_user
 
 
 

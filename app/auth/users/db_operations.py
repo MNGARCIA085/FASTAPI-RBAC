@@ -1,4 +1,4 @@
-from ..utils import get_password_hash
+from ..utils import get_password_hash,verify_password
 from databases.config import get_db
 from .. import schemas,models
 from sqlalchemy.orm import Session
@@ -14,6 +14,24 @@ def get_user(db: Session, username: str):
         return user
     else:
         return False
+
+
+
+
+
+#
+def authenticate_user(username: str, password: str, db: Session):
+    user = get_user(db,username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+
+
+
+
 
 
 # create user (for signup); no agrega los grupos, lo que debe hacer un admin
