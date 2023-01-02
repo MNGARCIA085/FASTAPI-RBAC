@@ -1,25 +1,26 @@
 from datetime import timedelta
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
-from . import schemas,dependencies,utils,db_operations
+from . import schemas,utils,db_operations
 from sqlalchemy.orm import Session
 from databases.config import get_db
 from constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from .groups import router as groups_routes
+from .users import router as users_routes
 
 
 router = APIRouter(
     prefix="/auth",
     responses={404: {"description": "Not found"}},
-    tags=['auth']
 )
 
 
 router.include_router(groups_routes.router,tags=['groups'])
+router.include_router(users_routes.router,tags=['users'])
 
 
 # sign up o register
-@router.post("/signup", response_model=schemas.Token, summary="Sign up (register)")
+@router.post("/signup", response_model=schemas.Token, summary="Sign up (register)",tags=['auth'])
 async def signin(user:schemas.UserRegister,
                 groups:list[int],
                 db:Session = Depends(get_db)):
@@ -41,7 +42,7 @@ async def signin(user:schemas.UserRegister,
 
 
 # obtener un token
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=schemas.Token, tags=['auth'])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),db:Session = Depends(get_db)):
     user = db_operations.authenticate_user(form_data.username, form_data.password,db )
     if not user:
@@ -58,38 +59,6 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 
-
-
-
-# get all users
-@router.get("/users",response_model=list[schemas.UserOut])
-def read_groups(
-            skip: int = 0, 
-            limit: int = 100, 
-            db: Session = Depends(get_db),
-        ):
-        return db_operations.get_users(skip,limit,db)
-
-
-
-
-
-# Edit an user
-@router.put("/users/{user_id}")
-def edit_user(user_id:int,groups:list[int],user:schemas.User,db: Session = Depends(get_db)):
-    return db_operations.edit_user(user_id,groups,user,db)
-
-
-
-
-
-
-
-
-# ejemplos de uso de las dependencias
-@router.get("/users/me/", response_model=schemas.User)
-async def read_users_me(current_user: schemas.User = Depends(dependencies.get_current_active_user)):
-    return current_user
 
 
 
