@@ -1,14 +1,19 @@
 from fastapi import APIRouter,Depends
 from sqlalchemy.orm import Session
+from ..dependencies import RoleChecker
 from databases.config import get_db
 from .. import schemas
 from . import db_operations
 
 
+# por id es mejor; 1:admin
+allow_create_resource = RoleChecker([1])
+
 
 router = APIRouter(
     prefix="/groups",
     responses={404: {"description": "Not found"}},
+    dependencies=[Depends(allow_create_resource)],
 )
 
 

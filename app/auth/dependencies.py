@@ -1,7 +1,8 @@
-from typing import List
 from fastapi import Depends, HTTPException, status
+from typing import List
 from jose import JWTError, jwt
-from . import schemas,db_operations
+from . import schemas,models
+from .users import db_operations
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from databases.config import get_db
@@ -40,3 +41,18 @@ async def get_current_active_user(current_user: schemas.User = Depends(get_curre
     return current_user
 
 
+
+# dependencia respecto a los grupos
+class RoleChecker:
+    def __init__(self, allowed_roles: List):
+        self.allowed_roles = allowed_roles
+ 
+    def __call__(self,user: schemas.User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+        grupos = db.query(models.UserGroups).filter(models.UserGroups.user_id==user['id'])
+        for g in grupos:
+            print(g.group_id)
+            print(self.allowed_roles)
+            if g.group_id in self.allowed_roles:
+                return
+        #logger.debug(f"User with role {user.role} not in {self.allowed_roles}")
+        raise HTTPException(status_code=403, detail="Operation not permitted")
